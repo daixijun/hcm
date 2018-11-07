@@ -8,6 +8,7 @@ require (
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
+	github.com/sirupsen/logrus v1.2.0 // indirect
 	github.com/urfave/cli v1.20.0
 	golang.org/x/sys v0.0.0-20180906133057-8cf3aee42992 // indirect
 	gopkg.in/yaml.v2 v2.2.1

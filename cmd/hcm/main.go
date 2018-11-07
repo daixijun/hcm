@@ -6,8 +6,8 @@ import (
 	"github.com/daixijun/hcm/parser"
 	"github.com/daixijun/hcm/storage"
 	"github.com/daixijun/hcm/utils"
-	"github.com/fatih/color"
 	"github.com/jinzhu/copier"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -17,15 +17,36 @@ import (
 	"sync"
 )
 
+func init() {
+
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.InfoLevel)
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "hcm"
+	app.Usage = "Helm Chart Mirror"
+	app.Author = "Xijun Dai"
+	app.Email = "daixijun1990@gmail.com"
+	app.HelpName = "hcm"
 	app.Version = "v0.0.1"
 	app.Action = cliHandler
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "config, c",
+			Value: "config.yaml",
+			Usage: "load configuration from file",
+		},
+		cli.BoolFlag{
+			Name:  "verbose, V",
+			Usage: "verbose mode",
+		},
+	}
 
 	err := app.Run(os.Args)
 	if err != nil {
-		panic(err.Error())
+		log.Fatalln(err.Error())
 	}
 }
 
@@ -33,10 +54,17 @@ func cliHandler(c *cli.Context) error {
 	var wg sync.WaitGroup
 	var backend storage.Backend
 
-	conf := config.NewConfig("config.yaml")
+	if c.Bool("verbose") {
+		log.SetLevel(log.DebugLevel)
+	}
+
+	conf := config.NewConfig(c.String("config"))
+	log.Infof("Load configuration from %s\n", c.String("config"))
+
 	client := utils.NewClient(conf.HTTPProxy)
 
 	backend = storage.NewStorageBackend(conf)
+	log.Infof("Use %s to storage.\n", conf.Storage.Backend)
 
 	for _, repo := range conf.Repositories {
 		wg.Add(1)
@@ -49,49 +77,57 @@ func cliHandler(c *cli.Context) error {
 
 func Mirror(repository config.Repository, client http.Client, backend storage.Backend, wg *sync.WaitGroup) {
 	defer wg.Done()
-	var newIndexData models.IndexBody
+	var (
+		newIndexData   models.IndexBody
+		chartIndexData *models.IndexBody
+		chartIndexPath = path.Join(repository.Name, "index.yaml")
+		chartName      string
+		chartFilePath  string
+		err            error
+	)
 
-	IndexData, err := parser.ParseIndex(repository.URL, client)
+	chartIndexData, err = parser.ParseIndex(repository.URL, client)
 	if err != nil {
-		panic("Failed to parse index " + repository.Name + " : " + err.Error())
+		log.Errorf("Failed to parse index %s: %s", repository.Name, err.Error())
 	}
-	err = copier.Copy(&newIndexData, &IndexData)
 
+	err = copier.Copy(&newIndexData, &chartIndexData)
 	if err != nil {
-		panic("copy new index data failed: " + err.Error())
+		log.Warnf("copy new index data failed %s: %s", repository.Name, err.Error())
 	}
 
-	for _, entryVersions := range IndexData.Entries {
+	for _, entryVersions := range chartIndexData.Entries {
 		for index, entry := range entryVersions {
-			//fmt.Println(repository.Name, entry.Name, entry.Version, entry.Digest, entry.Urls[0])
+			chartName = path.Base(entry.Urls[0])
+			chartFilePath = path.Join(repository.Name, chartName)
 
-			fileName := path.Base(entry.Urls[0])
-			filePath := path.Join(repository.Name, fileName)
-			if backend.IsExist(filePath) && backend.VerifyDigest(filePath, entry.Digest) {
-				color.Cyan("[skip] %s \n", filePath)
+			if backend.IsExist(chartFilePath) && backend.VerifyDigest(chartFilePath, entry.Digest) {
+				log.Debugf("[skip] %s \n", chartFilePath)
 			} else {
 				data, err := fetchChartPackage(entry.Urls[0], client)
 				if err != nil {
-					panic("Failed to fetch chart package " + entry.Urls[0] + " : " + err.Error())
+					log.Warnf("Failed to fetch chart package %s: %s", entry.Urls[0], err.Error())
 				}
-				err = backend.Present(filePath, data, entry.Digest)
+				err = backend.Present(chartFilePath, data, entry.Digest)
 				if err != nil {
-					panic("Failed to present " + filePath)
+					log.Warnf("Failed to present %s", chartFilePath)
 				}
-				color.Green("[Add] %s \n", filePath)
+				log.Infof("[Add] %s \n", chartFilePath)
 			}
-			newIndexData.Entries[entry.Name][index].Urls[0] = fileName
+			newIndexData.Entries[entry.Name][index].Urls[0] = chartName
 		}
 	}
 
 	data, err := yaml.Marshal(newIndexData)
 	if err != nil {
-		panic("Failed to marshal index: " + err.Error())
+		log.Warnf("Failed to marshal index: %s", err.Error())
 	}
-	err = backend.Present(path.Join(repository.Name, "index.yaml"), data, "")
+
+	err = backend.Present(chartIndexPath, data, "")
 	if err != nil {
-		panic("Failed to present index: " + err.Error())
+		log.Warnf("Failed to present index %s: %s", chartIndexPath, err.Error())
 	}
+	log.Infof("[Add] %s", chartIndexPath)
 }
 
 func fetchChartPackage(u string, client http.Client) ([]byte, error) {
