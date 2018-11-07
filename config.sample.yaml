@@ -1,0 +1,24 @@
+http_proxy: http://127.0.0.1:1087   # 为空则不启用代理
+storage:
+  backend: oss
+  filesystem:
+    rootdirectory: charts/
+  oss:
+    rootdirectory: /
+    bucketname: your-bucket-name
+    endpoint: oss-cn-hangzhou.aliyuncs.com
+    accesskeyid: your-access-key-id
+    accesskeysecret: your-access-key-secret
+repositories:
+  - name: stable
+    url: https://kubernetes-charts.storage.googleapis.com/
+  - name: incubator
+    url: https://kubernetes-charts-incubator.storage.googleapis.com/
+#  - name: gitlab
+#    url: https://charts.gitlab.io/
+#  - name: monocular
+#    url: https://helm.github.io/monocular/
+#  - name: kubefuncs
+#    url: https://charts.kubefuncs.com/
+#  - name: bitnami
+#    url: https://charts.bitnami.com/bitnami
