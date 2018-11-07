@@ -1,0 +1,16 @@
+# github.com/aliyun/aliyun-oss-go-sdk v0.0.0-20180918114345-ddc87ec2145f
+github.com/aliyun/aliyun-oss-go-sdk/oss
+# github.com/fatih/color v1.7.0
+github.com/fatih/color
+# github.com/jinzhu/copier v0.0.0-20180308034124-7e38e58719c3
+github.com/jinzhu/copier
+# github.com/mattn/go-colorable v0.0.9
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.4
+github.com/mattn/go-isatty
+# github.com/urfave/cli v1.20.0
+github.com/urfave/cli
+# golang.org/x/sys v0.0.0-20180906133057-8cf3aee42992
+golang.org/x/sys/unix
+# gopkg.in/yaml.v2 v2.2.1
+gopkg.in/yaml.v2
