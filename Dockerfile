@@ -8,7 +8,7 @@ ENV GO111MODULE=on
 # RUN apk add --no-cache git
 WORKDIR /app/
 COPY . .
-RUN go build -ldflags "-s -w" -mod=vendor -o hcm cmd/hcm/main.go
+RUN go build -a -installsuffix cgo -ldflags "-s -w" -mod=vendor -o hcm cmd/hcm/main.go
 
 FROM gruebel/upx:latest as upx
 COPY --from=builder /app/hcm /hcm.org
