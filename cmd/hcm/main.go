@@ -17,6 +17,12 @@ import (
 	"sync"
 )
 
+// This variable is replaced in compile time
+// `-ldflags "-X 'github.com/daixijun/hcm/cmd/hcm/main.Version=${VERSION}'"`
+var (
+    Version = "v0.0.1"
+)
+
 func init() {
 
 	log.SetOutput(os.Stdout)
@@ -30,7 +36,7 @@ func main() {
 	app.Author = "Xijun Dai"
 	app.Email = "daixijun1990@gmail.com"
 	app.HelpName = "hcm"
-	app.Version = "v0.0.1"
+	app.Version = Version
 	app.Action = cliHandler
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -75,6 +81,7 @@ func cliHandler(c *cli.Context) error {
 	return nil
 }
 
+// Mirror 同步仓库
 func Mirror(repository config.Repository, client http.Client, backend storage.Backend, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var (

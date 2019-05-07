@@ -1,12 +1,13 @@
 package config
 
 import (
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+
+	"gopkg.in/yaml.v2"
 )
 
-// 配置文件
+// Config 配置文件
 type Config struct {
 	HTTPProxy    string       `yaml:"http_proxy"`
 	Repositories []Repository `yaml:"repositories"`
@@ -34,20 +35,21 @@ type fileSystem struct {
 	RootDirectory string `yaml:"rootdirectory"`
 }
 
-// 需要同步的仓库
+// Repository 需要同步的仓库
 type Repository struct {
 	Name string `yaml:"name"`
 	URL  string `yaml:"url"`
 }
 
+// NewConfig 创建配置
 func NewConfig(configFile string) Config {
 	var cfg Config
 
 	if configFile == "" {
-		configFile = "cfg.yaml"
+		configFile = "/config.yaml"
 	}
 
-	data, err := ioutil.ReadFile("config.yaml")
+	data, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		log.Fatalf("读取配置文件错误: %s", err.Error())
 	}
